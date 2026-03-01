@@ -1,26 +1,60 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Dark mode overrides for common elements */
+.dark .bg-white {
+  background-color: #18181b !important;
+  /* zinc-900 */
+  color: #e4e4e7;
+  /* zinc-200 */
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.dark .bg-zinc-50\/50,
+.dark .bg-zinc-50 {
+  background-color: #27272a !important;
+  /* zinc-800 */
+}
+
+.dark .border-zinc-200 {
+  border-color: #3f3f46 !important;
+  /* zinc-700 */
+}
+
+.dark .border-zinc-100 {
+  border-color: #3f3f46 !important;
+}
+
+.dark .text-zinc-900 {
+  color: #e4e4e7 !important;
+}
+
+.dark .text-zinc-700 {
+  color: #a1a1aa !important;
+}
+
+.dark .text-zinc-600 {
+  color: #a1a1aa !important;
+}
+
+.dark .text-zinc-500 {
+  color: #71717a !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #27272a !important;
+  border-color: #3f3f46 !important;
+  color: #e4e4e7 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #52525b !important;
 }

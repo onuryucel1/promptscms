@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String        @id @default(cuid())
+  email     String        @unique
+  name      String?
+  password  String        @default("")
+  prompts   Prompt[]
+  settings  UserSettings?
+  apiKeys   ApiKey[]
+  documents Document[]
+  createdAt DateTime      @default(now())
+}
+
+model UserSettings {
+  id            String @id @default(cuid())
+  userId        String @unique
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  openAiKey     String?
+  selectedModel String @default("gpt-4o-mini")
+  theme         String @default("light")
+}
+
+model Prompt {
+  id           String          @id @default(cuid())
+  title        String
+  content      String
+  systemPrompt String?
+  tags         String          @default("[]")
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions          PromptVersion[]
+  testResults       TestResult[]
+  evaluationBatches EvaluationBatch[]
+  documents         Document[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model PromptVersion {
+  id          String   @id @default(cuid())
+  versionName String
+  title       String
+  content     String
+  isPublished Boolean  @default(false)
+  promptId    String
+  prompt      Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model TestResult {
+  id           String   @id @default(cuid())
+  promptId     String
+  prompt       Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  input        String
+  output       String
+  aiResponse   String?
+  tokens           Int?
+  promptTokens     Int?
+  completionTokens Int?
+  responseTime     Int?
+  isToxic      Boolean  @default(false)
+  ratings          String?
+  createdAt        DateTime @default(now())
+
+  evaluationBatchId String?
+  evaluationBatch   EvaluationBatch? @relation(fields: [evaluationBatchId], references: [id], onDelete: Cascade)
+}
+
+model EvaluationBatch {
+  id          String   @id @default(cuid())
+  promptId    String
+  prompt      Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  name        String
+  criteria    String?
+  results     TestResult[]
+  createdAt   DateTime @default(now())
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  key        String    @unique
+  name       String
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+}
+
+model Document {
+  id        String          @id @default(cuid())
+  title     String
+  content   String
+  type      String          @default("pdf")
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chunks    DocumentChunk[]
+  prompts   Prompt[]
+  createdAt DateTime        @default(now())
+}
+
+model DocumentChunk {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  content    String
+  embedding  String   // JSON string of Float[]
+  chunkIndex Int
+}

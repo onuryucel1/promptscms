@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# SQLite
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# Temporary files
+tmp*
+check-db.cjs
+check_users.js
+tmp_check_users.ts
+*.csv

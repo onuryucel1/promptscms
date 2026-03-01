@@ -1,65 +1,286 @@
-import Image from "next/image";
+'use client';
+
+import { usePromptStore } from '@/lib/store';
+import { Prompt } from '@/lib/store';
+import Link from 'next/link';
+import { PlusCircle, Edit3, Trash2, Calendar, TerminalSquare, Search, Copy, FileText, GitBranch, Clock, Download, Upload, Tag } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useToast } from '@/components/Toast';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import AnalyticsPanel from '@/components/AnalyticsPanel';
 
 export default function Home() {
+  const { prompts, deletePrompt, duplicatePrompt, addPrompt } = usePromptStore();
+  const { showToast } = useToast();
+  const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Collect all unique tags
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    prompts.forEach(p => p.tags?.forEach(t => tagSet.add(t)));
+    return Array.from(tagSet).sort();
+  }, [prompts]);
+
+  const filteredPrompts = useMemo(() => {
+    let result = prompts;
+    if (selectedTag) {
+      result = result.filter(p => p.tags?.includes(selectedTag));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        p => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [prompts, searchQuery, selectedTag]);
+
+  const totalVersions = useMemo(() =>
+    prompts.reduce((sum, p) => sum + (p.versions?.length || 0), 0)
+    , [prompts]);
+
+  const lastUpdate = useMemo(() => {
+    if (prompts.length === 0) return null;
+    const latest = Math.max(...prompts.map(p => p.updatedAt));
+    return new Date(latest).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+  }, [prompts]);
+
+  if (!mounted) return null;
+
+  const handleDuplicate = (id: string) => {
+    duplicatePrompt(id);
+    showToast('Prompt kopyalandı!', 'success');
+  };
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      deletePrompt(deleteTarget);
+      showToast('Prompt silindi.', 'error');
+      setDeleteTarget(null);
+    }
+  };
+
+  // JSON Export
+  const handleExportAll = () => {
+    const data = JSON.stringify(prompts, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'prompt-cms-export.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`${prompts.length} şablon dışa aktarıldı!`, 'success');
+  };
+
+  // JSON Import
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const imported = JSON.parse(evt.target?.result as string) as Prompt[];
+        let count = 0;
+        imported.forEach(p => {
+          addPrompt({ title: p.title, content: p.content, systemPrompt: p.systemPrompt, tags: p.tags });
+          count++;
+        });
+        showToast(`${count} şablon başarıyla içe aktarıldı!`, 'success');
+      } catch {
+        showToast('Geçersiz JSON dosyası.', 'error');
+      }
+    };
+    reader.readAsText(file);
+    if (importRef.current) importRef.current.value = '';
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="p-8 max-w-6xl mx-auto w-full">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Your Prompts</h1>
+          <p className="text-zinc-500 mt-1">Manage and test your prompt templates</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <div className="flex items-center gap-2">
+          {prompts.length > 0 && (
+            <>
+              <button
+                onClick={handleExportAll}
+                className="flex items-center gap-1.5 text-xs bg-zinc-100 text-zinc-600 hover:bg-zinc-200 px-3 py-2 rounded-lg font-medium transition-all"
+              >
+                <Download size={14} /> Export
+              </button>
+              <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+              <button
+                onClick={() => importRef.current?.click()}
+                className="flex items-center gap-1.5 text-xs bg-zinc-100 text-zinc-600 hover:bg-zinc-200 px-3 py-2 rounded-lg font-medium transition-all"
+              >
+                <Upload size={14} /> Import
+              </button>
+            </>
+          )}
+          <Link
+            href="/prompts/new"
+            className="flex items-center gap-2 bg-zinc-900 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-zinc-800 transition-all shadow-sm"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <PlusCircle size={18} />
+            Create Prompt
+          </Link>
+        </div>
+      </div>
+
+      {/* Analytics Dashboard */}
+      {prompts.length > 0 && <AnalyticsPanel />}
+
+      {/* Search Bar + Tag Filter */}
+      {prompts.length > 0 && (
+        <div className="mb-6 space-y-3">
+          <div className="relative">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Şablonlarda ara..."
+              className="w-full bg-white border border-zinc-200 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all placeholder:text-zinc-400 shadow-sm"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+          {allTags.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Tag size={14} className="text-zinc-400" />
+              <button
+                onClick={() => setSelectedTag(null)}
+                className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all ${!selectedTag ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+              >
+                Tümü
+              </button>
+              {allTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                  className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all ${selectedTag === tag ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'}`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      </main>
+      )}
+
+      {prompts.length === 0 ? (
+        <div className="text-center py-24 bg-white rounded-3xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center">
+          <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-4">
+            <TerminalSquare size={32} />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">No prompts yet</h3>
+          <p className="text-zinc-500 max-w-sm mb-6">Create your first prompt template to start managing your AI interactions.</p>
+          <div className="flex gap-3">
+            <Link
+              href="/prompts/new"
+              className="flex items-center gap-2 text-sm bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all"
+            >
+              Get Started
+            </Link>
+            <span>
+              <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+              <button
+                onClick={() => importRef.current?.click()}
+                className="flex items-center gap-2 text-sm bg-zinc-100 text-zinc-600 px-4 py-2 rounded-lg font-medium hover:bg-zinc-200 transition-all"
+              >
+                <Upload size={14} /> JSON&apos;dan İçe Aktar
+              </button>
+            </span>
+          </div>
+        </div>
+      ) : filteredPrompts.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-3xl border border-zinc-200 shadow-sm flex flex-col items-center justify-center">
+          <Search size={32} className="text-zinc-300 mb-3" />
+          <h3 className="text-lg font-semibold text-zinc-600 mb-1">Eşleşen şablon bulunamadı</h3>
+          <p className="text-sm text-zinc-400">&quot;{searchQuery}&quot; ile eşleşen bir prompt bulunamadı.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredPrompts.map((prompt) => (
+            <div
+              key={prompt.id}
+              className="bg-white rounded-2xl p-6 border border-zinc-200 shadow-sm hover:shadow-md transition-all group flex flex-col"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="font-semibold text-lg line-clamp-1 flex-1 pr-4">{prompt.title}</h3>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Link
+                    href={`/prompts/${prompt.id}`}
+                    className="p-1.5 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-all"
+                    title="Düzenle"
+                  >
+                    <Edit3 size={16} />
+                  </Link>
+                  <button
+                    onClick={() => handleDuplicate(prompt.id)}
+                    className="p-1.5 text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-md transition-all"
+                    title="Kopyala"
+                  >
+                    <Copy size={16} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(prompt.id)}
+                    className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all"
+                    title="Sil"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Tags */}
+              {prompt.tags && prompt.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {prompt.tags.map(tag => (
+                    <span key={tag} className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-200 font-medium">{tag}</span>
+                  ))}
+                </div>
+              )}
+
+              <div className="text-zinc-600 text-sm mb-6 line-clamp-3 bg-zinc-50 p-3 rounded-xl font-mono flex-1">
+                {prompt.content}
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-zinc-400 mt-auto pt-4 border-t border-zinc-100">
+                <Calendar size={14} />
+                <span>Updated {new Date(prompt.updatedAt).toLocaleDateString()}</span>
+                {prompt.versions && prompt.versions.length > 0 && (
+                  <span className="ml-auto bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                    {prompt.versions.length} versiyon
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Prompt'ı Sil"
+        message="Bu prompt'ı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+        confirmText="Evet, Sil"
+        cancelText="İptal"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
