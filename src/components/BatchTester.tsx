@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Papa from 'papaparse';
-import { Upload, FileDown, CheckCircle2, XCircle, PlaySquare, Download, Save, Loader2 } from 'lucide-react';
+import { Upload, FileDown, CheckCircle2, XCircle, PlaySquare, Download, Save, Loader2, Brain } from 'lucide-react';
 import { usePromptStore } from '@/lib/store';
 import { useToast } from '@/components/Toast';
 import ReactMarkdown from 'react-markdown';
@@ -35,6 +35,7 @@ export default function BatchTester({ promptId, content, systemPrompt }: BatchTe
     const [newCriterion, setNewCriterion] = useState('');
     const [testProgress, setTestProgress] = useState<{ current: number; total: number } | null>(null);
     const [isSavingBatch, setIsSavingBatch] = useState(false);
+    const [isJudging, setIsJudging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,6 +169,50 @@ export default function BatchTester({ promptId, content, systemPrompt }: BatchTe
         setTimeout(() => setTestProgress(null), 2000);
     };
 
+    const handleJudgeAll = async () => {
+        const completedRows = rows.filter(r => r.aiResponse && !r.isTesting);
+        if (completedRows.length === 0 || criteria.length === 0) {
+            showToast('Değerlendirilecek yanıt veya kriter bulunamadı.', 'error');
+            return;
+        }
+
+        setIsJudging(true);
+        const total = completedRows.length;
+        setTestProgress({ current: 0, total });
+        let completed = 0;
+
+        for (const row of completedRows) {
+            try {
+                const res = await fetch('/api/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        apiKey: openAiKey,
+                        originalPrompt: row.output,
+                        aiResponse: row.aiResponse,
+                        criteria: criteria,
+                        model: selectedModel
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && data.success && data.data && data.data.ratings) {
+                    setRows(prev => prev.map(r => r.id === row.id ? {
+                        ...r,
+                        ratings: { ...r.ratings, ...data.data.ratings }
+                    } : r));
+                }
+            } catch (error) {
+                console.error('Judging error on row', row.id, error);
+            }
+            completed++;
+            setTestProgress({ current: completed, total });
+        }
+
+        showToast(`${completed} yanıt Yapay Zeka tarafından değerlendirildi!`, 'success');
+        setTimeout(() => setTestProgress(null), 2000);
+        setIsJudging(false);
+    };
+
     const handleSaveBatchResults = async () => {
         const completedRows = rows.filter(r => r.aiResponse);
         if (completedRows.length === 0) return;
@@ -222,6 +267,16 @@ export default function BatchTester({ promptId, content, systemPrompt }: BatchTe
                                 <Download size={14} />
                                 Export
                             </button>
+                            {rows.some(r => r.aiResponse) && criteria.length > 0 && (
+                                <button
+                                    onClick={handleJudgeAll}
+                                    disabled={isJudging}
+                                    className="text-xs bg-violet-600 text-white hover:bg-violet-700 transition-all font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 disabled:opacity-50 shadow-sm shadow-violet-600/20"
+                                >
+                                    {isJudging ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
+                                    {isJudging ? 'Değerlendiriliyor...' : 'AI Judge'}
+                                </button>
+                            )}
                             {rows.some(r => r.aiResponse) && (
                                 <button
                                     onClick={handleSaveBatchResults}
