@@ -10,7 +10,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
         const { id } = await params;
         const prompt = await prisma.prompt.findUnique({
-            where: { id, userId: user.id },
+            where: { id, workspaceId: user.workspaceId! },
             include: {
                 versions: { orderBy: { createdAt: 'desc' } },
                 documents: { select: { id: true, title: true } }
@@ -54,7 +54,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         const { title, content, systemPrompt, tags, documentIds } = body;
 
         // Verify existance and ownership first
-        const existing = await prisma.prompt.findUnique({ where: { id, userId: user.id } });
+        const existing = await prisma.prompt.findUnique({ where: { id, workspaceId: user.workspaceId! } });
         if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         const prompt = await prisma.prompt.update({
@@ -103,7 +103,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
-        const existing = await prisma.prompt.findUnique({ where: { id, userId: user.id } });
+        const existing = await prisma.prompt.findUnique({ where: { id, workspaceId: user.workspaceId! } });
         if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         await prisma.prompt.delete({ where: { id } });

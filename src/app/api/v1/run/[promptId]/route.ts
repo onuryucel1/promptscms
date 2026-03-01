@@ -43,7 +43,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ promptI
         if (!promptId) return NextResponse.json({ error: 'Prompt ID is required' }, { status: 400 });
 
         const prompt = await prisma.prompt.findUnique({
-            where: { id: promptId, userId: apiKey.user.id },
+            where: { id: promptId, workspaceId: apiKey.user.workspaceId! },
             include: {
                 versions: {
                     where: { isPublished: true },

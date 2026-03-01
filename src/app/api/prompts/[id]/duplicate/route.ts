@@ -10,7 +10,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
         const { id } = await params;
         const original = await prisma.prompt.findUnique({
-            where: { id, userId: user.id },
+            where: { id, workspaceId: user.workspaceId! },
         });
 
         if (!original) {
@@ -23,7 +23,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
                 content: original.content,
                 systemPrompt: original.systemPrompt,
                 tags: original.tags,
-                userId: original.userId,
+                workspaceId: original.workspaceId!,
                 versions: {
                     create: {
                         versionName: 'V1.0',

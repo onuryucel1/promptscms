@@ -9,7 +9,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
-        const prompt = await prisma.prompt.findUnique({ where: { id, userId: user.id } });
+        const prompt = await prisma.prompt.findUnique({ where: { id, workspaceId: user.workspaceId! } });
         if (!prompt) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         const tests = await prisma.testResult.findMany({
@@ -30,7 +30,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
-        const prompt = await prisma.prompt.findUnique({ where: { id, userId: user.id } });
+        const prompt = await prisma.prompt.findUnique({ where: { id, workspaceId: user.workspaceId! } });
         if (!prompt) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         const body = await req.json();

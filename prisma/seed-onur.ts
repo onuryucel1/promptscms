@@ -32,7 +32,7 @@ async function main() {
     console.log('✅ User created/updated:', user.email);
 
     // Mevcut promptları temizle (tekrar tekrar eklememek için)
-    await prisma.prompt.deleteMany({ where: { userId: user.id } });
+    await prisma.prompt.deleteMany({ where: { workspaceId: user.workspaceId! } });
 
     // Seed prompts
     const prompts = [
@@ -72,7 +72,7 @@ async function main() {
         const created = await prisma.prompt.create({
             data: {
                 ...p,
-                userId: user.id,
+                workspaceId: user.workspaceId!,
                 versions: {
                     create: [
                         { versionName: 'V1.0', title: p.title, content: p.content },

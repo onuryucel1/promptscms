@@ -68,7 +68,7 @@ async function main() {
         const created = await prisma.prompt.create({
             data: {
                 ...p,
-                userId: user.id,
+                workspaceId: user.workspaceId!,
                 versions: {
                     create: [
                         { versionName: 'V1.0', title: p.title, content: p.content },

@@ -20,11 +20,19 @@ export async function POST(req: Request) {
         }
 
         const hashedPassword = await hashPassword(password);
+
+        // Kullanıcı oluşturulurken aynı zamanda ona ait bir Workspace aç ve ikisini bağla
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
                 password: hashedPassword,
+                role: 'owner',
+                workspace: {
+                    create: {
+                        name: `${name.split(' ')[0]}'s Workspace`
+                    }
+                },
                 settings: {
                     create: {
                         selectedModel: 'gpt-4o-mini',

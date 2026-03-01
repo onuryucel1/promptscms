@@ -10,9 +10,9 @@ export async function GET() {
         }
 
         // Fetch counts
-        const totalPrompts = await prisma.prompt.count({ where: { userId: user.id } });
+        const totalPrompts = await prisma.prompt.count({ where: { workspaceId: user.workspaceId! } });
         const promptsWithVersions = await prisma.prompt.findMany({
-            where: { userId: user.id },
+            where: { workspaceId: user.workspaceId! },
             include: {
                 versions: true,
                 testResults: { orderBy: { createdAt: 'desc' } }
@@ -22,14 +22,14 @@ export async function GET() {
         const totalVersions = promptsWithVersions.reduce((acc, p) => acc + p.versions.length, 0);
 
         // Knowledge Base stats
-        const totalDocuments = await prisma.document.count({ where: { userId: user.id } });
+        const totalDocuments = await prisma.document.count({ where: { workspaceId: user.workspaceId! } });
         const totalChunks = await prisma.documentChunk.count({
-            where: { document: { userId: user.id } }
+            where: { document: { workspaceId: user.workspaceId! } }
         });
 
         // Fetch all test results for cost and token aggregation
         const testResults = await prisma.testResult.findMany({
-            where: { prompt: { userId: user.id } },
+            where: { prompt: { workspaceId: user.workspaceId! } },
             orderBy: { createdAt: 'desc' },
             include: { prompt: { select: { id: true, title: true } } }
         });
@@ -94,10 +94,10 @@ export async function GET() {
             id: r.id,
             promptId: r.prompt.id,
             promptTitle: r.prompt.title,
-            model: r.model,
+            model: 'gpt-4o-mini', // TestResult'ta model olmadığı için varsayılan
             responseTime: r.responseTime,
             tokens: r.tokens,
-            status: r.status,
+            status: r.isToxic ? 'toxic' : 'success',
             createdAt: r.createdAt.toISOString(),
         }));
 

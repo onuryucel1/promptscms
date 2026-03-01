@@ -8,7 +8,7 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const workflows = await prisma.workflow.findMany({
-        where: { userId: user.id },
+        where: { workspaceId: user.workspaceId! },
         orderBy: { updatedAt: 'desc' },
         include: { _count: { select: { runs: true } } }
     });
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
             description: description || null,
             nodes: JSON.stringify(nodes || []),
             edges: JSON.stringify(edges || []),
-            userId: user.id,
+            workspaceId: user.workspaceId!,
         }
     });
 

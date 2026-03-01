@@ -8,7 +8,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = await params;
 
-    const workflow = await prisma.workflow.findFirst({ where: { id, userId: user.id } });
+    const workflow = await prisma.workflow.findFirst({ where: { id, workspaceId: user.workspaceId! } });
     if (!workflow) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const runs = await prisma.workflowRun.findMany({
@@ -26,7 +26,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = await params;
 
-    const workflow = await prisma.workflow.findFirst({ where: { id, userId: user.id } });
+    const workflow = await prisma.workflow.findFirst({ where: { id, workspaceId: user.workspaceId! } });
     if (!workflow) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const body = await req.json();

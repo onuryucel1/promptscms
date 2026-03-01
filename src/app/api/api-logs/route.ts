@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
     // Build filter — only show logs for prompts owned by the user
     const userPromptIds = await prisma.prompt.findMany({
-        where: { userId: user.id },
+        where: { workspaceId: user.workspaceId! },
         select: { id: true }
     });
     const promptIds = userPromptIds.map(p => p.id);

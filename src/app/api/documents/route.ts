@@ -16,7 +16,7 @@ export async function GET() {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const documents = await prisma.document.findMany({
-            where: { userId: user.id },
+            where: { workspaceId: user.workspaceId! },
             include: {
                 _count: {
                     select: { chunks: true }
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
                 title: title || 'Başlıksız Doküman',
                 content: text,
                 type: fileType,
-                userId: user.id
+                workspaceId: user.workspaceId!
             }
         });
 

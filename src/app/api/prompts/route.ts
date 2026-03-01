@@ -8,7 +8,7 @@ export async function GET() {
         const user = await getSessionUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         const prompts = await prisma.prompt.findMany({
-            where: { userId: user.id },
+            where: { workspaceId: user.workspaceId! },
             include: { versions: { orderBy: { createdAt: 'desc' } } },
             orderBy: { updatedAt: 'desc' },
         });
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
                 content,
                 systemPrompt: systemPrompt || null,
                 tags: JSON.stringify(tags || []),
-                userId: user.id,
+                workspaceId: user.workspaceId!,
                 versions: {
                     create: {
                         versionName: 'V1.0',

@@ -11,7 +11,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const { id, versionId } = await params;
 
         // Verify prompt ownership
-        const prompt = await prisma.prompt.findUnique({ where: { id, userId: user.id } });
+        const prompt = await prisma.prompt.findUnique({ where: { id, workspaceId: user.workspaceId! } });
         if (!prompt) return NextResponse.json({ error: 'Prompt not found' }, { status: 404 });
 
         // Unpublish all versions for this prompt

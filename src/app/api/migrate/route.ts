@@ -21,7 +21,7 @@ export async function POST(req: Request) {
                         content: p.content,
                         systemPrompt: p.systemPrompt || null,
                         tags: JSON.stringify(p.tags || []),
-                        userId: user.id,
+                        workspaceId: user.workspaceId!,
                         versions: {
                             create: (p.versions || []).map((v: any) => ({
                                 versionName: v.versionName,

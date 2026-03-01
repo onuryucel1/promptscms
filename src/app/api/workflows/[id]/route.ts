@@ -9,7 +9,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const { id } = await params;
 
     const workflow = await prisma.workflow.findFirst({
-        where: { id, userId: user.id },
+        where: { id, workspaceId: user.workspaceId! },
         include: {
             runs: { orderBy: { createdAt: 'desc' }, take: 20 },
             _count: { select: { runs: true } }
@@ -26,7 +26,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = await params;
 
-    const existing = await prisma.workflow.findFirst({ where: { id, userId: user.id } });
+    const existing = await prisma.workflow.findFirst({ where: { id, workspaceId: user.workspaceId! } });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const body = await req.json();
@@ -51,7 +51,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = await params;
 
-    const existing = await prisma.workflow.findFirst({ where: { id, userId: user.id } });
+    const existing = await prisma.workflow.findFirst({ where: { id, workspaceId: user.workspaceId! } });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     await prisma.workflow.delete({ where: { id } });
