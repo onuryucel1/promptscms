@@ -20,6 +20,12 @@
 - Sistem prompt (system prompt) desteği
 - Akıllı AI optimizasyon önerileri
 
+### 🏢 Çalışma Alanı & Takım Yönetimi (Multi-Tenant)
+- **İzole Çalışma Alanları (Workspaces):** Her yeni kayıt olan kullanıcıya özel, tamamen izole edilmiş veri alanı
+- **Takım Arkadaşı Ekleme:** Yönetici (Owner) yetkisindeki kullanıcıların kendi çalışma alanlarına yeni alt kullanıcılar (Member) ekleyebilmesi
+- **Ortak Veri Erişimi:** Takım üyelerinin aynı çalışma alanındaki (Workspace) promptlara, dokümanlara ve iş akışlarına erişip yönetebilmesi
+- **Rol Bazlı Yetkilendirme:** Sadece yöneticilerin (Owner) takım arkadaşı ekleme/silme yetkisinin olması
+
 ### 🔄 Versiyon Kontrolü
 - Her prompt için sürüm geçmişi
 - Sürümler arası fark (diff) görüntüleme
@@ -120,7 +126,8 @@ Tarayıcıda `http://localhost:3000` adresini aç ve hesap oluştur.
 src/
 ├── app/
 │   ├── api/              # REST API endpoint'leri
-│   │   ├── auth/         # Login/logout/me
+│   │   ├── auth/         # Login/logout/register/me
+│   │   ├── team/         # Takım arkadaşı (alt kullanıcı) CRUD
 │   │   ├── prompts/      # Prompt CRUD
 │   │   ├── workflows/    # İş akışı CRUD + run history
 │   │   ├── api-logs/     # API kullanım analitiği
@@ -131,11 +138,11 @@ src/
 │   ├── api-deployment/   # API entegrasyon sayfası
 │   ├── api-analytics/    # API kullanım analitiği
 │   ├── knowledge-base/   # Bilgi bankası
-│   └── settings/         # Ayarlar
+│   └── settings/         # Ayarlar & Takım Yönetimi
 ├── components/           # Yeniden kullanılabilir bileşenler
 ├── lib/
 │   ├── db.ts             # Prisma client
-│   ├── auth.ts           # Kimlik doğrulama yardımcıları
+│   ├── auth.ts           # Kimlik doğrulama ve JWT JWT yardımcıları
 │   └── store.ts          # Zustand global state
 └── generated/
     └── prisma/           # Otomatik oluşturulan Prisma client
