@@ -7,54 +7,28 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Dark mode overrides for common elements */
-.dark .bg-white {
-  background-color: #18181b !important;
-  /* zinc-900 */
-  color: #e4e4e7;
-  /* zinc-200 */
+/* ─── Page & card entrance animations ─────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-.dark .bg-zinc-50\/50,
-.dark .bg-zinc-50 {
-  background-color: #27272a !important;
-  /* zinc-800 */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.dark .border-zinc-200 {
-  border-color: #3f3f46 !important;
-  /* zinc-700 */
-}
+.animate-fade-in  { animation: fadeIn  0.35s ease both; }
+.animate-slide-up { animation: slideUp 0.4s ease both; }
 
-.dark .border-zinc-100 {
-  border-color: #3f3f46 !important;
-}
+/* Staggered card delays */
+.delay-100 { animation-delay: 0.10s; }
+.delay-200 { animation-delay: 0.20s; }
+.delay-300 { animation-delay: 0.30s; }
+.delay-400 { animation-delay: 0.40s; }
 
-.dark .text-zinc-900 {
-  color: #e4e4e7 !important;
-}
-
-.dark .text-zinc-700 {
-  color: #a1a1aa !important;
-}
-
-.dark .text-zinc-600 {
-  color: #a1a1aa !important;
-}
-
-.dark .text-zinc-500 {
-  color: #71717a !important;
-}
-
-.dark input,
-.dark textarea,
-.dark select {
-  background-color: #27272a !important;
-  border-color: #3f3f46 !important;
-  color: #e4e4e7 !important;
-}
-
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #52525b !important;
-}
+/* ─── Custom scrollbar (thin) ──────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar       { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 10px; }
+.dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; }

@@ -16,6 +16,7 @@ model User {
   settings  UserSettings?
   apiKeys   ApiKey[]
   documents Document[]
+  workflows Workflow[]
   createdAt DateTime      @default(now())
 }
 
@@ -40,6 +41,7 @@ model Prompt {
   testResults       TestResult[]
   evaluationBatches EvaluationBatch[]
   documents         Document[]
+  apiLogs           ApiLog[]
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 }
@@ -90,6 +92,7 @@ model ApiKey {
   name       String
   userId     String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiLogs    ApiLog[]
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
 }
@@ -113,4 +116,49 @@ model DocumentChunk {
   content    String
   embedding  String   // JSON string of Float[]
   chunkIndex Int
+}
+
+model Workflow {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  nodes       String        @default("[]") // JSON: node positions, types, data
+  edges       String        @default("[]") // JSON: edge connections
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runs        WorkflowRun[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model WorkflowRun {
+  id         String   @id @default(cuid())
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  input      String
+  steps      String   @default("[]") // JSON: [{stepLabel, input, output, time, model, status}]
+  status     String   @default("completed") // completed, error
+  totalTime  Int?
+  createdAt  DateTime @default(now())
+}
+
+model ApiLog {
+  id               String   @id @default(cuid())
+  promptId         String
+  prompt           Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  apiKeyId         String?
+  apiKey           ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  apiKeyName       String?
+  input            String      // variables JSON
+  output           String      // AI response
+  model            String
+  promptTokens     Int?
+  completionTokens Int?
+  totalTokens      Int?
+  responseTime     Int         // ms
+  status           String      @default("success") // success, error
+  errorMessage     String?
+  ipAddress        String?
+  userAgent        String?
+  createdAt        DateTime @default(now())
 }

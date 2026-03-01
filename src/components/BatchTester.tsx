@@ -194,7 +194,7 @@ export default function BatchTester({ promptId, content, systemPrompt }: BatchTe
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm flex flex-col h-full mt-6">
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm flex flex-col h-fit mt-6">
             <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <PlaySquare size={18} className="text-orange-500" />

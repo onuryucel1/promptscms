@@ -33,7 +33,7 @@ export default function RootLayout({
         <ToastProvider>
           <ThemeWrapper>
             <Sidebar />
-            <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
+            <main className="flex-1 flex flex-col min-h-screen overflow-y-auto animate-fade-in">
               {children}
             </main>
           </ThemeWrapper>

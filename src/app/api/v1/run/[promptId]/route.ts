@@ -111,7 +111,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ promptI
             total_tokens: completion.usage.total_tokens,
         } : undefined;
 
-        // 6. Asynchronously update the lastUsedAt timestamp and save a TestResult (optional but good for tracking)
+        // 6. Extract caller info
+        const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+        const userAgent = req.headers.get('user-agent') || 'unknown';
+
+        // 7. Asynchronously update the lastUsedAt timestamp and save tracking records
         Promise.all([
             prisma.apiKey.update({
                 where: { id: apiKey.id },
@@ -130,10 +134,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ promptI
                     isToxic: false,
                     ratings: null
                 }
+            }),
+            prisma.apiLog.create({
+                data: {
+                    promptId: prompt.id,
+                    apiKeyId: apiKey.id,
+                    apiKeyName: apiKey.name,
+                    input: JSON.stringify(variables),
+                    output: text,
+                    model: selectedModel,
+                    promptTokens: usage?.prompt_tokens || null,
+                    completionTokens: usage?.completion_tokens || null,
+                    totalTokens: usage?.total_tokens || null,
+                    responseTime: elapsed,
+                    status: 'success',
+                    ipAddress,
+                    userAgent,
+                }
             })
         ]).catch(err => console.error("Error in async API usage tracking:", err));
 
-        // 7. Return Result
+        // 8. Return Result
         return NextResponse.json({
             success: true,
             data: {

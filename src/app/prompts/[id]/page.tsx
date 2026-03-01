@@ -11,7 +11,6 @@ import VersionHistory from '@/components/VersionHistory';
 import BatchTester from '@/components/BatchTester';
 import ABTester from '@/components/ABTester';
 import TestHistory from '@/components/TestHistory';
-import ChainBuilder from '@/components/ChainBuilder';
 import MultiModelArena from '@/components/MultiModelArena';
 import ApiIntegrationSnippet from '@/components/ApiIntegrationSnippet';
 import RagDocumentSelector from '@/components/RagDocumentSelector';
@@ -224,7 +223,6 @@ ${systemPrompt ? `Sistem Talimatı: ${systemPrompt}` : ''}`;
                 {!isNew && <BatchTester promptId={id} content={content} systemPrompt={systemPrompt} />}
                 {!isNew && <ABTester promptId={id} contentA={content} systemPrompt={systemPrompt} />}
                 {!isNew && <TestHistory promptId={id} />}
-                {!isNew && <ChainBuilder prompts={prompts} systemPrompt={systemPrompt} />}
                 {!isNew && versions.length >= 2 && <VersionDiff versions={versions} />}
 
                 {/* AI Optimization Suggestion Panel */}

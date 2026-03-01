@@ -13,14 +13,25 @@ export async function GET() {
         const totalPrompts = await prisma.prompt.count({ where: { userId: user.id } });
         const promptsWithVersions = await prisma.prompt.findMany({
             where: { userId: user.id },
-            include: { versions: true }
+            include: {
+                versions: true,
+                testResults: { orderBy: { createdAt: 'desc' } }
+            },
+            orderBy: { updatedAt: 'desc' },
         });
         const totalVersions = promptsWithVersions.reduce((acc, p) => acc + p.versions.length, 0);
+
+        // Knowledge Base stats
+        const totalDocuments = await prisma.document.count({ where: { userId: user.id } });
+        const totalChunks = await prisma.documentChunk.count({
+            where: { document: { userId: user.id } }
+        });
 
         // Fetch all test results for cost and token aggregation
         const testResults = await prisma.testResult.findMany({
             where: { prompt: { userId: user.id } },
-            orderBy: { createdAt: 'asc' }
+            orderBy: { createdAt: 'desc' },
+            include: { prompt: { select: { id: true, title: true } } }
         });
 
         let totalTokens = 0;
@@ -58,8 +69,6 @@ export async function GET() {
                 totalTokens += tokens;
                 dailyStats[dateStr].tokens += tokens;
 
-                // Guess model from somewhere, or default to 4o-mini for rough baseline if not stored in test result
-                // (In a real app, model should preferably be stored per test result)
                 const modelDef = costMap['gpt-4o-mini'];
                 const cost = (result.promptTokens * modelDef.in) + (result.completionTokens * modelDef.out);
 
@@ -78,7 +87,65 @@ export async function GET() {
             requests: stats.requests,
             tokens: stats.tokens,
             cost: parseFloat(stats.cost.toFixed(6))
-        })).slice(-30); // Last 30 days
+        })).slice(-30);
+
+        // Recent test results (last 8)
+        const recentTests = testResults.slice(0, 8).map(r => ({
+            id: r.id,
+            promptId: r.prompt.id,
+            promptTitle: r.prompt.title,
+            model: r.model,
+            responseTime: r.responseTime,
+            tokens: r.tokens,
+            status: r.status,
+            createdAt: r.createdAt.toISOString(),
+        }));
+
+        // Top prompts by test count
+        const topPrompts = promptsWithVersions
+            .map(p => ({
+                id: p.id,
+                title: p.title,
+                testCount: p.testResults.length,
+                updatedAt: p.updatedAt.toISOString(),
+            }))
+            .sort((a, b) => b.testCount - a.testCount)
+            .slice(0, 5);
+
+        // Recently updated prompts (last 5)
+        const recentPrompts = promptsWithVersions.slice(0, 5).map(p => ({
+            id: p.id,
+            title: p.title,
+            updatedAt: p.updatedAt.toISOString(),
+            versionCount: p.versions.length,
+        }));
+
+        // API Analytics stats
+        const promptIds = promptsWithVersions.map(p => p.id);
+        const apiLogs = await prisma.apiLog.findMany({
+            where: { promptId: { in: promptIds } },
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+            include: { prompt: { select: { id: true, title: true } } }
+        });
+
+        const apiTotalCalls = apiLogs.length;
+        const apiErrorCount = apiLogs.filter(l => l.status === 'error').length;
+        const apiErrorRate = apiTotalCalls > 0 ? parseFloat(((apiErrorCount / apiTotalCalls) * 100).toFixed(1)) : 0;
+        const apiAvgResponseTime = apiTotalCalls > 0
+            ? Math.round(apiLogs.reduce((s, l) => s + (l.responseTime || 0), 0) / apiTotalCalls)
+            : 0;
+        const apiTotalTokens = apiLogs.reduce((s, l) => s + (l.totalTokens || 0), 0);
+        const recentApiLogs = apiLogs.slice(0, 5).map(l => ({
+            id: l.id,
+            promptTitle: l.prompt?.title || 'Silinmiş',
+            apiKeyName: l.apiKeyName || '-',
+            model: l.model,
+            totalTokens: l.totalTokens,
+            responseTime: l.responseTime,
+            status: l.status,
+            createdAt: l.createdAt.toISOString(),
+        }));
 
         return NextResponse.json({
             success: true,
@@ -89,7 +156,19 @@ export async function GET() {
                 totalTokens,
                 totalCostUsd: parseFloat(totalCostUsd.toFixed(4)),
                 averageResponseTime,
-                chartData
+                chartData,
+                recentTests,
+                topPrompts,
+                recentPrompts,
+                ragStats: { totalDocuments, totalChunks },
+                apiStats: {
+                    totalCalls: apiTotalCalls,
+                    errorCount: apiErrorCount,
+                    errorRate: apiErrorRate,
+                    avgResponseTime: apiAvgResponseTime,
+                    totalTokens: apiTotalTokens,
+                    recentLogs: recentApiLogs,
+                },
             }
         });
 

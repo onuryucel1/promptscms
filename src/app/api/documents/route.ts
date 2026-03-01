@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 import { splitText, generateEmbedding } from '@/lib/rag';
-const pdf = require('pdf-parse');
+
+// Polyfill DOMMatrix for Node.js environment (needed by some pdf-parse/pdfjs versions)
+if (typeof global.DOMMatrix === 'undefined') {
+    (global as any).DOMMatrix = class DOMMatrix {
+        constructor() { }
+    };
+}
 
 export async function GET() {
     try {
@@ -30,10 +36,6 @@ export async function POST(req: Request) {
         const user = await getSessionUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const formData = await req.formData();
-        const file = formData.get('file') as File;
-        if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-
         // Get OpenAI Key from user settings
         const settings = await prisma.userSettings.findUnique({
             where: { userId: user.id }
@@ -42,27 +44,54 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'OpenAI API Key is missing in settings' }, { status: 400 });
         }
 
-        const buffer = Buffer.from(await file.arrayBuffer());
+        const contentType = req.headers.get('content-type') || '';
+        let title = '';
         let text = '';
-        const fileType = file.name.split('.').pop()?.toLowerCase();
+        let fileType = 'text';
 
-        if (fileType === 'pdf') {
-            const data = await pdf(buffer);
-            text = data.text;
+        if (contentType.includes('multipart/form-data')) {
+            const formData = await req.formData();
+            const file = formData.get('file') as File;
+            if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+
+            const buffer = Buffer.from(await file.arrayBuffer());
+            fileType = file.name.split('.').pop()?.toLowerCase() || 'text';
+            title = file.name;
+
+            if (fileType === 'pdf') {
+                const pdf = require('pdf-parse');
+                const data = await pdf(buffer);
+                text = data.text;
+            } else {
+                text = buffer.toString('utf-8');
+            }
+        } else if (contentType.includes('application/json')) {
+            const body = await req.json();
+            title = body.title;
+            const type = body.type; // 'text' or 'qa'
+
+            if (type === 'qa') {
+                fileType = 'qa';
+                // Format QA pairs into a searchable text block
+                text = body.pairs.map((p: { q: string, a: string }) => `Soru: ${p.q}\nCevap: ${p.a}`).join('\n\n');
+            } else {
+                fileType = 'text';
+                text = body.content;
+            }
         } else {
-            text = buffer.toString('utf-8');
+            return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 400 });
         }
 
         if (!text.trim()) {
-            return NextResponse.json({ error: 'Document is empty or could not be read' }, { status: 400 });
+            return NextResponse.json({ error: 'Content is empty or could not be read' }, { status: 400 });
         }
 
         // Create the document
         const document = await prisma.document.create({
             data: {
-                title: file.name,
+                title: title || 'Başlıksız Doküman',
                 content: text,
-                type: fileType || 'text',
+                type: fileType,
                 userId: user.id
             }
         });
