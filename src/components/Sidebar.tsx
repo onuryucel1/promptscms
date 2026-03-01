@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
     LayoutDashboard, FileText, PlusCircle, Settings,
-    Sun, Moon, LogOut, User, Database, Menu, X, ChevronRight, Terminal, Link2, Activity
+    Sun, Moon, LogOut, User, Database, Menu, X, ChevronRight, Terminal, Link2, Activity, Brain
 } from 'lucide-react';
 import { usePromptStore } from '@/lib/store';
 
 const navItems = [
     { name: 'Kontrol Paneli', href: '/', icon: LayoutDashboard },
     { name: 'Promptlar', href: '/prompts', icon: FileText },
+    { name: 'Değerlendirmeler', href: '/evaluations', icon: Brain },
     { name: 'İş Akışları', href: '/prompt-chaining', icon: Link2 },
     { name: 'Bilgi Bankası', href: '/knowledge-base', icon: Database },
     { name: 'API Entegrasyonu', href: '/api-deployment', icon: Terminal },
